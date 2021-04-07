@@ -144,6 +144,9 @@ var (
 
 		// Make paths in deps files relative.
 		"-no-canonical-prefixes",
+
+		// Warnings from clang-12
+		"-Wno-compound-token-split-by-macro",
 	}
 
 	commonGlobalConlyflags = []string{}
