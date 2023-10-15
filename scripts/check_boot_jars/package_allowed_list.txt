@@ -258,6 +258,10 @@ org\.chromium\.arc\..*
 # Lineage adds
 vendor\.lineage.*
 
+# BlackIron adds
+org\.blackiron
+org\.blackiron\..*
+
 # NV adds
 com\.nvidia
 com\.nvidia\..*
