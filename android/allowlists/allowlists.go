@@ -71,6 +71,7 @@ var (
 		"build/make/tools/sbom":              Bp2BuildDefaultTrue,
 		"build/make/tools/signapk":           Bp2BuildDefaultTrue,
 		"build/make/tools/zipalign":          Bp2BuildDefaultTrueRecursively,
+		"vendor/lineage/signing/keys": 	      Bp2BuildDefaultTrue,
 		"build/soong":                        Bp2BuildDefaultTrue,
 		"build/soong/cc/libbuildversion":     Bp2BuildDefaultTrue, // Skip tests subdir
 		"build/soong/cc/ndkstubgen":          Bp2BuildDefaultTrue,
@@ -489,6 +490,7 @@ var (
 		"build/make/core":/* recursive = */ false,
 		"build/bazel_common_rules":/* recursive = */ true,
 		"build/make/target/product/security":/* recursive = */ false,
+		"vendor/lineage/signing/keys":/* recursive = */ false,
 		// build/make/tools/signapk BUILD file is generated, so build/make/tools is not recursive.
 		"build/make/tools":/* recursive = */ false,
 		"build/pesto":/* recursive = */ true,
