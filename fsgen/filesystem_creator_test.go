@@ -295,23 +295,23 @@ func TestPrebuiltEtcModuleGen(t *testing.T) {
 		}),
 	).RunTest(t)
 
-	getModuleProp := func(m android.Module, matcher func(actual interface{}) string) string {
+	checkModuleProp := func(m android.Module, matcher func(actual interface{}) bool) bool {
 		for _, prop := range m.GetProperties() {
 
-			if str := matcher(prop); str != "" {
-				return str
+			if matcher(prop) {
+				return true
 			}
 		}
-		return ""
+		return false
 	}
 
 	// check generated prebuilt_* module type install path and install partition
-	generatedModule := result.ModuleForTests("system-frameworks_base_config-etc-0", "android_common").Module()
+	generatedModule := result.ModuleForTests("system-frameworks_base_config-etc-0", "android_arm64_armv8-a").Module()
 	etcModule, _ := generatedModule.(*etc.PrebuiltEtc)
 	android.AssertStringEquals(
 		t,
-		"module expected to have . install path",
-		".",
+		"module expected to have etc install path",
+		"etc",
 		etcModule.BaseDir(),
 	)
 	android.AssertBoolEquals(
@@ -324,65 +324,14 @@ func TestPrebuiltEtcModuleGen(t *testing.T) {
 	)
 
 	// check generated prebuilt_* module specifies correct relative_install_path property
-	generatedModule = result.ModuleForTests("system-frameworks_base_data_keyboards-usr_keylayout_subdir-0", "android_common").Module()
+	generatedModule = result.ModuleForTests("system-frameworks_base_data_keyboards-usr_keylayout_subdir-0", "android_arm64_armv8-a").Module()
 	etcModule, _ = generatedModule.(*etc.PrebuiltEtc)
 	android.AssertStringEquals(
 		t,
-		"module expected to set correct srcs property",
-		"Vendor_0079_Product_0011.kl",
-		getModuleProp(generatedModule, func(actual interface{}) string {
-			if p, ok := actual.(*etc.PrebuiltEtcProperties); ok {
-				srcs := p.Srcs.GetOrDefault(eval, nil)
-				if len(srcs) == 2 {
-					return srcs[0];
-				}
-			}
-			return ""
-		}),
+		"module expected to set correct relative_install_path properties",
+		"subdir",
+		etcModule.SubDir(),
 	)
-	android.AssertStringEquals(
-		t,
-		"module expected to set correct srcs property",
-		"Vendor_0079_Product_18d4.kl",
-		getModuleProp(generatedModule, func(actual interface{}) string {
-			if p, ok := actual.(*etc.PrebuiltEtcProperties); ok {
-				srcs := p.Srcs.GetOrDefault(eval, nil)
-				if len(srcs) == 2 {
-					return srcs[1];
-				}
-			}
-			return ""
-		}),
-	)
-	android.AssertStringEquals(
-		t,
-		"module expected to set correct dsts property",
-		"usr/keylayout/subdir/Vendor_0079_Product_0011.kl",
-		getModuleProp(generatedModule, func(actual interface{}) string {
-			if p, ok := actual.(*etc.PrebuiltDstsProperties); ok {
-				dsts := p.Dsts.GetOrDefault(eval, nil)
-				if len(dsts) == 2 {
-					return dsts[0];
-				}
-			}
-			return ""
-		}),
-	)
-	android.AssertStringEquals(
-		t,
-		"module expected to set correct dsts property",
-		"usr/keylayout/subdir/Vendor_0079_Product_18d4.kl",
-		getModuleProp(generatedModule, func(actual interface{}) string {
-			if p, ok := actual.(*etc.PrebuiltDstsProperties); ok {
-				dsts := p.Dsts.GetOrDefault(eval, nil)
-				if len(dsts) == 2 {
-					return dsts[1];
-				}
-			}
-			return ""
-		}),
-	)
-
 
 	// check that prebuilt_* module is not generated for non existing source file
 	android.AssertPanicMessageContains(
@@ -393,133 +342,64 @@ func TestPrebuiltEtcModuleGen(t *testing.T) {
 	)
 
 	// check that duplicate src file can exist in PRODUCT_COPY_FILES and generates separate modules
-	generatedModule0 := result.ModuleForTests("product-device_sample_etc-etc-0", "android_common").Module()
-	generatedModule1 := result.ModuleForTests("product-device_sample_etc-etc-1", "android_common").Module()
+	generatedModule0 := result.ModuleForTests("product-device_sample_etc-etc-0", "android_arm64_armv8-a").Module()
+	generatedModule1 := result.ModuleForTests("product-device_sample_etc-etc-1", "android_arm64_armv8-a").Module()
 
 	// check that generated prebuilt_* module sets correct srcs and dsts property
-	eval = generatedModule0.ConfigurableEvaluator(android.PanickingConfigAndErrorContext(result.TestContext))
-	android.AssertStringEquals(
+	eval := generatedModule0.ConfigurableEvaluator(android.PanickingConfigAndErrorContext(result.TestContext))
+	android.AssertBoolEquals(
 		t,
 		"module expected to set correct srcs property",
-		"apns-full-conf.xml",
-		getModuleProp(generatedModule0, func(actual interface{}) string {
+		true,
+		checkModuleProp(generatedModule0, func(actual interface{}) bool {
 			if p, ok := actual.(*etc.PrebuiltEtcProperties); ok {
 				srcs := p.Srcs.GetOrDefault(eval, nil)
-				if len(srcs) == 1 {
-					return srcs[0];
-				}
+				return len(srcs) == 1 &&
+					srcs[0] == "apns-full-conf.xml"
 			}
-			return ""
+			return false
 		}),
 	)
-	android.AssertStringEquals(
+	android.AssertBoolEquals(
 		t,
 		"module expected to set correct dsts property",
-		"etc/apns-conf.xml",
-		getModuleProp(generatedModule0, func(actual interface{}) string {
+		true,
+		checkModuleProp(generatedModule0, func(actual interface{}) bool {
 			if p, ok := actual.(*etc.PrebuiltDstsProperties); ok {
 				dsts := p.Dsts.GetOrDefault(eval, nil)
-				if len(dsts) == 1 {
-					return dsts[0];
-				}
+				return len(dsts) == 1 &&
+					dsts[0] == "apns-conf.xml"
 			}
-			return ""
+			return false
 		}),
 	)
 
 	// check that generated prebuilt_* module sets correct srcs and dsts property
 	eval = generatedModule1.ConfigurableEvaluator(android.PanickingConfigAndErrorContext(result.TestContext))
-	android.AssertStringEquals(
+	android.AssertBoolEquals(
 		t,
 		"module expected to set correct srcs property",
-		"apns-full-conf.xml",
-		getModuleProp(generatedModule1, func(actual interface{}) string {
+		true,
+		checkModuleProp(generatedModule1, func(actual interface{}) bool {
 			if p, ok := actual.(*etc.PrebuiltEtcProperties); ok {
 				srcs := p.Srcs.GetOrDefault(eval, nil)
-				if len(srcs) == 1 {
-					return srcs[0];
-				}
+				return len(srcs) == 1 &&
+					srcs[0] == "apns-full-conf.xml"
 			}
-			return ""
+			return false
 		}),
 	)
-	android.AssertStringEquals(
+	android.AssertBoolEquals(
 		t,
 		"module expected to set correct dsts property",
-		"etc/apns-conf-2.xml",
-		getModuleProp(generatedModule1, func(actual interface{}) string {
+		true,
+		checkModuleProp(generatedModule1, func(actual interface{}) bool {
 			if p, ok := actual.(*etc.PrebuiltDstsProperties); ok {
 				dsts := p.Dsts.GetOrDefault(eval, nil)
-				if len(dsts) == 1 {
-					return dsts[0];
-				}
+				return len(dsts) == 1 &&
+					dsts[0] == "apns-conf-2.xml"
 			}
-			return ""
-		}),
-	)
-
-	generatedModule2 := result.ModuleForTests(t, "system-device_sample_etc-foo-0", "android_common").Module()
-	generatedModule3 := result.ModuleForTests(t, "system-device_sample_etc-foo-1", "android_common").Module()
-
-	// check that generated prebuilt_* module sets correct srcs and dsts property
-	eval = generatedModule2.ConfigurableEvaluator(android.PanickingConfigAndErrorContext(result.TestContext))
-	android.AssertStringEquals(
-		t,
-		"module expected to set correct srcs property",
-		"apns-full-conf.xml",
-		getModuleProp(generatedModule2, func(actual interface{}) string {
-			if p, ok := actual.(*etc.PrebuiltEtcProperties); ok {
-				srcs := p.Srcs.GetOrDefault(eval, nil)
-				if len(srcs) == 1 {
-					return srcs[0];
-				}
-			}
-			return ""
-		}),
-	)
-	android.AssertStringEquals(
-		t,
-		"module expected to set correct dsts property",
-		"foo/file.txt",
-		getModuleProp(generatedModule2, func(actual interface{}) string {
-			if p, ok := actual.(*etc.PrebuiltDstsProperties); ok {
-				dsts := p.Dsts.GetOrDefault(eval, nil)
-				if len(dsts) == 1 {
-					return dsts[0];
-				}
-			}
-			return ""
-		}),
-	)
-
-	// check that generated prebuilt_* module sets correct srcs and dsts property
-	eval = generatedModule3.ConfigurableEvaluator(android.PanickingConfigAndErrorContext(result.TestContext))
-	android.AssertStringEquals(
-		t,
-		"module expected to set correct srcs property",
-		"apns-full-conf.xml",
-		getModuleProp(generatedModule2, func(actual interface{}) string {
-			if p, ok := actual.(*etc.PrebuiltEtcProperties); ok {
-				srcs := p.Srcs.GetOrDefault(eval, nil)
-				if len(srcs) == 1 {
-					return srcs[0];
-				}
-			}
-			return ""
-		}),
-	)
-	android.AssertStringEquals(
-		t,
-		"module expected to set correct dsts property",
-		"foo/apns-full-conf.xml",
-		getModuleProp(generatedModule3, func(actual interface{}) string {
-			if p, ok := actual.(*etc.PrebuiltDstsProperties); ok {
-				dsts := p.Dsts.GetOrDefault(eval, nil)
-				if len(dsts) == 1 {
-					return dsts[0];
-				}
-			}
-			return ""
+			return false
 		}),
 	)
 }
