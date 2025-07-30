@@ -144,7 +144,6 @@ var Configuration = map[string]PathConfig{
 	"python":     Forbidden,
 	"python2":    Forbidden,
 	"python2.7":  Forbidden,
-	"python3":    Forbidden,
 
 	// These are toybox tools that only work on Linux.
 	"pgrep": LinuxOnlyPrebuilt,
